@@ -100,4 +100,118 @@ public class CentralizedTemplate implements CentralizedBehavior {
         }
         return plan;
     }
+    
+	public Solution searchSolutionSLS(COP constraints) {
+		Solution Aold;
+		List<Solution> N;
+		int f = constraints.f;
+		Solution A;
+		int maxStep = 0;
+		
+		 A = SelectInitialSolution(constraints);
+		
+		while(maxStep == 100) {
+			Aold = A;
+			N = ChooseNeighbours(Aold,constraints);
+			A = LocalChoice(N,f);
+			maxStep++;
+		}
+		return A;
+	}
+	
+	public Solution SelectInitialSolution(COP constraints) {
+		Solution initial = new Solution(0,0);
+		return initial;
+	}
+	
+	public List<Solution> ChooseNeighbours(Solution Aold, COP constraints) {
+		List<Solution> N = new ArrayList<Solution>();
+		
+		return N;
+	}
+	
+	public Solution LocalChoice(List<Solution> N, int f) {
+		Solution s = new Solution(0,0);
+		
+		
+		return s;
+	}
+	
+	/** Changing the vehicle for a task (pickup and delivery) **/
+	public Solution ChangingVehicle(Solution A, int v1, int v2) {
+		Solution A1 = A;
+		int t = A.getNextTaskVehicles(v1);	
+		// If it is a deliver only change t
+		if (t % 2 == 0) {
+			A1.setNextTaskVehicles(v1, A1.getNextTaskActions(t));
+			A1.setNextTaskActions(t, A1.getNextTaskVehicles(v2));
+			A1.setNextTaskVehicles(v2, t);
+		}
+		else {
+			// We have to assign the pickup t and the deliver to the same vehicle
+			if (A1.getNextTaskActions(t) == t+1)
+				A1.setNextTaskVehicles(v1, A1.getNextTaskActions(t+1));
+			else
+				A1.setNextTaskVehicles(v1, A1.getNextTaskActions(t));
+			A1.setNextTaskActions(t, t+1);
+			A1.setNextTaskVehicles(v2, t);
+		}
+		UpdateTime(A1, v1);
+		UpdateTime(A1, v2);
+		return A1;
+	}
+	
+	/** Changing task order **/
+	// ATTENTION VERSION NON OK POUR PLRS TACHE VERSION PAPIER
+	public Solution ChangingTaskOrder(Solution A, int vi, int tIdx1, int tIdx2) {
+		Solution A1 = A;
+		int tPre1 = vi; // previous task of task1
+		int t1 = A1.getNextTaskActions(tPre1); // task1
+		int count = 1;
+		while(count < tIdx1) {
+			tPre1 = t1;
+			t1 = A1.getNextTaskActions(t1);
+			count ++;
+		}
+		int tPost1 = A1.getNextTaskActions(t1); // the task done after t1
+		int tPre2 = t1; //previous task of task2
+		int t2 = A1.getNextTaskActions(tPre2); //task2
+		count++;
+		while(count<tIdx2) {
+			tPre2 = t2;
+			t2 = A1.getNextTaskActions(t2);
+			count ++;
+		}
+		int tPost2 = A1.getNextTaskActions(t2); // the task done after t1
+		// exchanging two tasks
+		if (tPost1 == t2) {
+			// t2 is done just after t1
+			A1.setNextTaskActions(tPre1, t2);
+			A1.setNextTaskActions(t2, t1);
+			A1.setNextTaskActions(t1, tPost2);
+		}
+		else {
+			A1.setNextTaskActions(tPre1, t2);
+			A1.setNextTaskActions(tPre2, t1);
+			A1.setNextTaskActions(t2, tPost1);
+			A1.setNextTaskActions(t1, tPost2);
+		}
+		UpdateTime(A1, vi);
+		return A1;
+	}
+	
+	public void UpdateTime(Solution A, int vi) {
+		if (A.getNextTaskVehicles(vi) != null) {
+			int ti = A.getNextTaskVehicles(vi);
+			A.time[ti] = 1;
+			Integer tj = A.getNextTaskActions(ti);
+			while (tj != null) {
+				tj = A.getNextTaskActions(ti);
+				if (tj != null) {
+					A.time[tj] = A.time[ti]+1;
+					ti = tj;
+				}
+			}
+		}
+	}
 }
