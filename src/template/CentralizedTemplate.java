@@ -108,9 +108,9 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		Solution A;
 		int maxStep = 0;
 		
-		 A = SelectInitialSolution(constraints);
+		A = SelectInitialSolution(constraints);
 		
-		while(maxStep == 100) {
+		while(maxStep <= 100) {
 			Aold = A;
 			N = ChooseNeighbours(Aold,constraints);
 			A = LocalChoice(N,f);
