@@ -1,6 +1,9 @@
 package template;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import logist.plan.Plan;
 
 public class Solution {
 
@@ -12,7 +15,7 @@ public class Solution {
 	public Solution(int Nv, int Nt) {
 		nextTaskActions = new Integer[2*Nt];
 		nextTaskVehicles = new Integer[Nv];
-		time = new Integer[Nv];
+		time = new Integer[2*Nt];
 		vehicles = new Integer[2*Nt];
 	}
 	
@@ -30,5 +33,12 @@ public class Solution {
 	
 	public void setNextTaskVehicles(int index,int newValue) {
 		nextTaskVehicles[index] = newValue;
+	}
+	
+	public List<Plan> toPlans() {
+		List<Plan> plans;
+		plans = new ArrayList<Plan>();
+		
+		return plans;
 	}
 }
