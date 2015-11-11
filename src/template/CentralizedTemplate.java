@@ -224,13 +224,13 @@ public class CentralizedTemplate implements CentralizedBehavior {
 	}
 	
 	/** Changing task order **/
-	// ATTENTION VERSION NON OK POUR PLRS TACHE VERSION PAPIER
 	public Solution ChangingTaskOrder(Solution A, int vi, int tIdx1, int tIdx2) {
 		Solution A1 = A;
-		int tPre1 = vi; // previous task of task1
-		int t1 = A1.getNextTaskActions(tPre1); // task1
+		
+		int tPre1 = 0;// previous task of action1
+		int t1 = A1.getNextTaskVehicles(vi); // task1
 		int count = 1;
-		while(count < tIdx1) {
+		while(count != tIdx1) {
 			tPre1 = t1;
 			t1 = A1.getNextTaskActions(t1);
 			count ++;
@@ -238,14 +238,32 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		int tPost1 = A1.getNextTaskActions(t1); // the task done after t1
 		int tPre2 = t1; //previous task of task2
 		int t2 = A1.getNextTaskActions(tPre2); //task2
-		count++;
-		while(count<tIdx2) {
+		count ++;
+		
+		while(count < tIdx2) {
 			tPre2 = t2;
 			t2 = A1.getNextTaskActions(t2);
 			count ++;
 		}
-		int tPost2 = A1.getNextTaskActions(t2); // the task done after t1
-		// exchanging two tasks
+		int tPost2 = A1.getNextTaskActions(t2); // the task done after t2
+		
+		// Check if the echange is possible : not put a deliver before its pickup and the opposite
+		// t1 is a pickup
+		if (t1 % 2 == 0) {
+			// The deliver is before the task2
+			if (A1.time[vi][t1]<=A1.time[vi][t2]) {
+				return null;
+			}
+		}
+		// t2 is a deliver
+		if (t2 % 2 != 0) {
+			// The pickup is after t1
+			if(A1.time[vi][t2-1]>=A1.time[vi][t1]){
+				return null;
+			}
+		}
+		
+		// Exchanging two tasks
 		if (tPost1 == t2) {
 			// t2 is done just after t1
 			A1.setNextTaskActions(tPre1, t2);
@@ -263,14 +281,15 @@ public class CentralizedTemplate implements CentralizedBehavior {
 	}
 	
 	public void UpdateTime(Solution A, int vi) {
+		Arrays.fill(A.time, 0);
 		if (A.getNextTaskVehicles(vi) != null) {
 			int ti = A.getNextTaskVehicles(vi);
-			A.time[ti] = 1;
+			A.time[vi][ti] = 1;
 			Integer tj = A.getNextTaskActions(ti);
 			while (tj != null) {
 				tj = A.getNextTaskActions(ti);
 				if (tj != null) {
-					A.time[tj] = A.time[ti]+1;
+					A.time[vi][tj] = A.time[vi][ti]+1;
 					ti = tj;
 				}
 			}
