@@ -157,6 +157,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
 	
 	/** Choose Neighbors**/
 	public List<Solution> ChooseNeighbours(Solution Aold, TaskSet tasks) {
+		System.out.println("choose neighbours");
 		List<Solution> N = new ArrayList<Solution>();
 		Object[] tasksArray =  tasks.toArray();
 		Integer[] nextTV = Aold.nextTaskVehicles;
@@ -178,14 +179,13 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		// Applying the changing task order operator
 		int length = 0;
 		pickFirstTaskIndex = Aold.getNextTaskVehicles(vi);		
-		length++;
 		do {
 			pickFirstTaskIndex = Aold.nextTaskActions[pickFirstTaskIndex];
 			length++;
 		} while (pickFirstTaskIndex != null);
 			
 		System.out.println("taille chemin :"+length);
-		if (length >= 2) {
+		if (length > 4) {
 			for (int tIdx1 = 1; tIdx1 < length-1; tIdx1++) {
 				for (int tIdx2 = tIdx1 + 1; tIdx2 < length; tIdx2++) {
 					Solution A = ChangingTaskOrder(Aold, vi, tIdx1, tIdx2);
@@ -200,7 +200,8 @@ public class CentralizedTemplate implements CentralizedBehavior {
 	
 	/** Local Choice **/
 	public Solution LocalChoice(List<Solution> N, TaskSet tasks, Solution Aold) {
-		double p = 0.4 ;
+		System.out.println("Local choice");
+		double p = 0.9 ;
 		Solution A = N.get(0);
 		float minCost = computeCost(A, tasks);	
 		// Find the solution with the minimal cost
@@ -233,7 +234,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		for (int pi = 0 ; pi < A.nextTaskActions.length; pi= pi+2) {
 			City piCity = ((Task)tasksArray[pi/2]).pickupCity;
 			City nextCity = null;
-			int costPerKm = agent.vehicles().get(A.vehicles[pi]).costPerKm();
+			int costPerKm = agent.vehicles().get(A.vehicles[pi/2]).costPerKm();
 			Integer nextTaskTi = A.nextTaskActions[pi];
 			if (nextTaskTi != null) 
 			{
@@ -249,7 +250,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		for (int di = 1 ; di < A.nextTaskActions.length; di= di+2) {
 			City diCity = ((Task)tasksArray[di/2]).deliveryCity;
 			City nextCity = null;
-			int costPerKm = agent.vehicles().get(A.vehicles[di]).costPerKm();
+			int costPerKm = agent.vehicles().get(A.vehicles[di/2]).costPerKm();
 			Integer nextTaskTi = A.nextTaskActions[di];
 			if (nextTaskTi != null) {
 				if (nextTaskTi % 2 == 0 )
@@ -264,6 +265,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
 	
 	/** Changing the vehicle for a task (pickup and delivery) **/
 	public Solution ChangingVehicle(Solution A, int v1, int v2) {
+		System.out.println("Changing vehicle");
 		Solution A1 = A;
 		int t = A.getNextTaskVehicles(v1);	
 		// 
@@ -271,7 +273,6 @@ public class CentralizedTemplate implements CentralizedBehavior {
 			A1.setNextTaskVehicles(v1,A1.getNextTaskActions(t));
 			A1.setNextTaskActions(t, A1.getNextTaskVehicles(v2));
 			A1.setNextTaskVehicles(v2,t);
-			
 		}
 		else {
 			// We have to assign the pickup t and the deliver to the same vehicle
@@ -279,35 +280,38 @@ public class CentralizedTemplate implements CentralizedBehavior {
 				A1.setNextTaskVehicles(v1,A1.getNextTaskActions(t+1));
 				A1.setNextTaskActions(t, t+1);
 				A1.setNextTaskVehicles(v2,t);
-				
 			}	
 			else {
-				int id = t;
+				Integer id = t;
 				int tPre=id;
+				System.out.println("entree while changing");
 				while (id != t+1){
 					tPre = id;
 					id = A1.getNextTaskActions(id);
 				}
+				System.out.println("sortie while");
 				A1.setNextTaskActions(tPre, A1.nextTaskActions[t+1]);
 				A1.setNextTaskActions(t, t+1);
 				A1.setNextTaskVehicles(v1,A1.getNextTaskActions(t));
 				A1.setNextTaskVehicles(v2,t);
 			}
-			A1.vehicles[t+1]=v2;	
+			A1.vehicles[(t+1)/2] = v2;	
 		}
-		A1.vehicles[t]=v2;
+		A1.vehicles[t/2] = v2;
 		UpdateTime(A1, v1);
 		UpdateTime(A1, v2);
+		System.out.println("apres updates");
 		return A1;
 	}
 	
 	/** Changing task order **/
 	public Solution ChangingTaskOrder(Solution A, int vi, int tIdx1, int tIdx2) {
+		System.out.println("changing task order");
 		Solution A1 = A;
-		System.out.println("("+ tIdx1 +","+ tIdx2+")");
+		//System.out.println("("+ tIdx1 +","+ tIdx2+")");
 		int tPre1 = A1.getNextTaskVehicles(vi);// previous task of action1
 		int t1 = A1.getNextTaskVehicles(vi); // task1
-		int count = 0;
+		int count = 1;
 
 		while(count < tIdx1) {
 			tPre1 = t1;
@@ -321,10 +325,8 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		while(count < tIdx2) {
 			tPre2 = t2;
 			t2 = A1.getNextTaskActions(t2);
-			if (t2 == null) System.out.println("t2null "+count + "  "+ tIdx2);
 			count ++;
 		}
-		System.out.println(tPre2 + " "+ t2 );
 		Integer tPost2 = A1.nextTaskActions[t2]; // the task done after t2
 		
 		// Check if the echange is possible : not put a deliver before its pickup and the opposite
@@ -362,19 +364,22 @@ public class CentralizedTemplate implements CentralizedBehavior {
 	
 	/** Update Time of a vehicle**/
 	public void UpdateTime(Solution A, int vi) {
+		System.out.println("update time");
 		Arrays.fill(A.time[vi], -1);
 		if (A.getNextTaskVehicles(vi) != null) {
 			Integer ti = A.getNextTaskVehicles(vi);
-			A.time[vi][ti.intValue()] = 1;
-			Integer tj = A.getNextTaskActions(ti);
-			while (tj != null) {
+			A.time[vi][ti.intValue()] = 1;	
+			Integer tj;
+			do{
 				tj = A.getNextTaskActions(ti);
 				if (tj != null) {
 					A.time[vi][tj] = A.time[vi][ti]+1;
 					ti = tj;
 				}
-			}
+				System.out.println(ti+" "+tj);
+			}while (tj != null);
 		}
+		
 	}
 	
 	/** Return a random vehicle which has tasks  **/
