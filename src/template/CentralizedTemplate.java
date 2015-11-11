@@ -101,14 +101,14 @@ public class CentralizedTemplate implements CentralizedBehavior {
         return plan;
     }
     
-	public Solution searchSolutionSLS(COP constraints) {
+	public Solution searchSolutionSLS(COP constraints, List<Vehicle> vehicles, TaskSet tasks ) {
 		Solution Aold;
 		List<Solution> N;
 		int f = constraints.f;
 		Solution A;
 		int maxStep = 0;
 		
-		A = SelectInitialSolution(constraints);
+		A = SelectInitialSolution(vehicles, tasks);
 		
 		while(maxStep <= 100) {
 			Aold = A;
@@ -119,8 +119,32 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		return A;
 	}
 	
-	public Solution SelectInitialSolution(COP constraints) {
-		Solution initial = new Solution(0,0);
+	public Solution SelectInitialSolution(List<Vehicle> vehicles, TaskSet tasks ) {
+		Solution initial = new Solution(vehicles.size(), tasks.size());
+		int Nt = tasks.size();
+		Vehicle selectVehicle = vehicles.get(0);
+		// Get the vehicle with the max capacity
+		for(Vehicle v : vehicles) {
+			if(v.capacity()>selectVehicle.capacity()) 
+				selectVehicle = v;
+		}
+		// Fill the tables with Naive plan
+		// NextTaskActions & time
+		for(int i = 0; i<(2*Nt-1); i++) {
+			initial.nextTaskActions[i] = i+1;
+			initial.time[selectVehicle.id()][i] = i+1;
+		}
+		initial.nextTaskActions[2*Nt-1] = null;
+		initial.time[selectVehicle.id()][2*Nt-1] = 2*Nt;
+		// NextTaskVehicles
+		for(int vi = 0; vi<vehicles.size();vi++) {
+			initial.nextTaskVehicles[vi] = null;
+		}
+		initial.nextTaskVehicles[selectVehicle.id()] = 0;
+		// Vehicles
+		for(int ti = 0 ; ti < tasks.size(); ti++) {
+			initial.vehicles[ti] = selectVehicle.id();
+		}
 		return initial;
 	}
 	
