@@ -3,6 +3,7 @@ package template;
 import java.util.ArrayList;
 import java.util.List;
 
+import logist.plan.Action;
 import logist.plan.Plan;
 import logist.simulation.Vehicle;
 import logist.task.Task;
@@ -54,18 +55,19 @@ public class Solution {
 			if (nextTaskVehicles[i] == null) {
 				plans.add(Plan.EMPTY);
 
-			} else {
+			} 
+			else {
 				City currentCity = vehicles.get(i).homeCity();
 				Plan plan = new Plan(currentCity);
 
 				// move to pick up first task
-				for (City city : currentCity.pathTo(tasksList.get(nextTaskVehicles[i]).pickupCity)) {
+				for (City city : currentCity.pathTo(tasksList.get(nextTaskVehicles[i]/2).pickupCity)) {
 					plan.appendMove(city);
 				}
 
-				currentCity = tasksList.get(nextTaskVehicles[i]).pickupCity;
+				currentCity = tasksList.get(nextTaskVehicles[i]/2).pickupCity;
 
-				plan.appendPickup(tasksList.get(nextTaskVehicles[i]));
+				plan.appendPickup(tasksList.get(nextTaskVehicles[i]/2));
 
 				Integer action = nextTaskActions[nextTaskVehicles[i]];
 				while (action != null) {
@@ -82,7 +84,8 @@ public class Solution {
 						plan.appendPickup(tasksList.get(taskId));
 						currentCity = tasksList.get(taskId).pickupCity;
 						
-					} else {
+					}
+					else {
 						for (City city : currentCity.pathTo(tasksList.get(taskId).deliveryCity)) {
 							plan.appendMove(city);
 						}
@@ -92,10 +95,16 @@ public class Solution {
 					
 					action = nextTaskActions[action];
 				}
-				
+				System.out.println("-----------------------");
+				System.out.println("Vehicle "+i + ",  cost :"+plan.totalDistance()*vehicles.get(i).costPerKm()+", color:"+vehicles.get(i).color().toString());
+				System.out.println("-----------------------");
+				for (Action A : plan) {
+					System.out.println(A.toString());
+				}
 				plans.add(plan);
 
 			}
+			
 		}
 
 		return plans;
