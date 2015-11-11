@@ -192,11 +192,56 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		return N;
 	}
 	
-	public Solution LocalChoice(List<Solution> N, int f) {
-		Solution s = new Solution(0,0);
-		
-		
-		return s;
+	public Solution LocalChoice(List<Solution> N, TaskSet tasks) {
+		Solution A = N.get(0);
+		float minCost = computeCost(A, tasks);	
+		// Find the solution with the minimal cost
+		for(Solution s : N)
+		{
+			float f = computeCost(s,tasks);
+			if (f < minCost) {
+				minCost = f;
+				A = s; 
+			}
+		}
+		return A;
+	}
+	
+	public float computeCost(Solution A, TaskSet tasks) {
+		Object[] tasksArray = tasks.toArray();
+		float cost = 0;
+		// Compute the cost of a plan for each vehicle
+		for( int vi = 0 ; vi < A.vehicles.length; vi ++ ) {
+			int costPerKm = agent.vehicles().get(vi).costPerKm();
+			City taskOneCity = ((Task)tasksArray[A.nextTaskVehicles[vi]/2]).pickupCity;
+			double distHomeTaskOne = agent.vehicles().get(vi).homeCity().distanceTo(taskOneCity);
+			cost += costPerKm * distHomeTaskOne;
+		}
+		//all pickup
+		for (int pi = 0 ; pi < A.nextTaskActions.length; pi= pi+2) {
+			City piCity = ((Task)tasksArray[pi/2]).pickupCity;
+			City nextCity = null;
+			int costPerKm = agent.vehicles().get(A.vehicles[pi]).costPerKm();
+			int nextTaskTi = A.nextTaskActions[pi];
+			if (nextTaskTi % 2 == 0 )
+				nextCity = ((Task)tasksArray[A.nextTaskVehicles[nextTaskTi]/2]).pickupCity;
+			else 
+				nextCity = ((Task)tasksArray[A.nextTaskVehicles[nextTaskTi]/2]).deliveryCity;
+			cost += costPerKm * piCity.distanceTo(nextCity);
+		}
+		//all delivered
+		for (int di = 1 ; di < A.nextTaskActions.length; di= di+2) {
+			City diCity = ((Task)tasksArray[di/2]).deliveryCity;
+			City nextCity = null;
+			int costPerKm = agent.vehicles().get(A.vehicles[di]).costPerKm();
+			int nextTaskTi = A.nextTaskActions[di];
+			if (nextTaskTi % 2 == 0 )
+				nextCity = ((Task)tasksArray[A.nextTaskVehicles[nextTaskTi]/2]).pickupCity;
+			else 
+				nextCity = ((Task)tasksArray[A.nextTaskVehicles[nextTaskTi]/2]).deliveryCity;
+			cost += costPerKm * diCity.distanceTo(nextCity);
+		}
+		return cost;
 	}
 	
 	/** Changing the vehicle for a task (pickup and delivery) **/
