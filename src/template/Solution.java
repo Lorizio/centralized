@@ -16,7 +16,7 @@ public class Solution {
 		nextTaskActions = new Integer[2*Nt];
 		nextTaskVehicles = new Integer[Nv];
 		time = new Integer[2*Nt];
-		vehicles = new Integer[2*Nt];
+		vehicles = new Integer[Nt];
 	}
 	
 	public Integer getNextTaskActions(int index) {
