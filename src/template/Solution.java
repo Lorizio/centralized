@@ -9,13 +9,13 @@ public class Solution {
 
 	Integer[] nextTaskActions;
 	Integer[] nextTaskVehicles;
-	Integer[] time;
+	Integer[][] time;
 	Integer[] vehicles;
 	
 	public Solution(int Nv, int Nt) {
 		nextTaskActions = new Integer[2*Nt];
 		nextTaskVehicles = new Integer[Nv];
-		time = new Integer[2*Nt];
+		time = new Integer[Nv][2*Nt];
 		vehicles = new Integer[Nt];
 	}
 	
