@@ -177,15 +177,16 @@ public class CentralizedTemplate implements CentralizedBehavior {
 
 		// Applying the changing task order operator
 		int length = 0;
-		pickFirstTaskIndex = vi;		
+		pickFirstTaskIndex = Aold.getNextTaskVehicles(vi);		
+		length++;
 		do {
 			pickFirstTaskIndex = Aold.nextTaskActions[pickFirstTaskIndex];
 			length++;
 		} while (pickFirstTaskIndex != null);
 			
-		System.out.println(length);
+		System.out.println("taille chemin :"+length);
 		if (length >= 2) {
-			for (int tIdx1 = 0; tIdx1 < length-1; tIdx1++) {
+			for (int tIdx1 = 1; tIdx1 < length-1; tIdx1++) {
 				for (int tIdx2 = tIdx1 + 1; tIdx2 < length; tIdx2++) {
 					Solution A = ChangingTaskOrder(Aold, vi, tIdx1, tIdx2);
 					if (A != null) {
@@ -303,8 +304,8 @@ public class CentralizedTemplate implements CentralizedBehavior {
 	/** Changing task order **/
 	public Solution ChangingTaskOrder(Solution A, int vi, int tIdx1, int tIdx2) {
 		Solution A1 = A;
-		
-		int tPre1 = 0;// previous task of action1
+		System.out.println("("+ tIdx1 +","+ tIdx2+")");
+		int tPre1 = A1.getNextTaskVehicles(vi);// previous task of action1
 		int t1 = A1.getNextTaskVehicles(vi); // task1
 		int count = 0;
 
@@ -317,14 +318,15 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		Integer tPre2 = t1; //previous task of task2
 		Integer t2 = A1.getNextTaskActions(tPre2); //task2
 		count ++;
-		while(count < tIdx2-1) {
+		while(count < tIdx2) {
 			tPre2 = t2;
 			t2 = A1.getNextTaskActions(t2);
+			if (t2 == null) System.out.println("t2null "+count + "  "+ tIdx2);
 			count ++;
 		}
-		System.out.println(count+ " "+t2 + "   ("+ tIdx1 +","+ tIdx2+")");
+		System.out.println(tPre2 + " "+ t2 );
 		Integer tPost2 = A1.nextTaskActions[t2]; // the task done after t2
-		System.out.println(tPost2);
+		
 		// Check if the echange is possible : not put a deliver before its pickup and the opposite
 		// t1 is a pickup
 		if (t1 % 2 == 0) {
@@ -361,13 +363,11 @@ public class CentralizedTemplate implements CentralizedBehavior {
 	/** Update Time of a vehicle**/
 	public void UpdateTime(Solution A, int vi) {
 		Arrays.fill(A.time[vi], -1);
-		System.out.println("debut uptade time");
 		if (A.getNextTaskVehicles(vi) != null) {
 			Integer ti = A.getNextTaskVehicles(vi);
 			A.time[vi][ti.intValue()] = 1;
 			Integer tj = A.getNextTaskActions(ti);
 			while (tj != null) {
-				System.out.println(tj + "   " + ti);
 				tj = A.getNextTaskActions(ti);
 				if (tj != null) {
 					A.time[vi][tj] = A.time[vi][ti]+1;
@@ -375,8 +375,6 @@ public class CentralizedTemplate implements CentralizedBehavior {
 				}
 			}
 		}
-		System.out.println("fin update time");
-
 	}
 	
 	/** Return a random vehicle which has tasks  **/
