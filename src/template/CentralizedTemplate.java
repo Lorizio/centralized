@@ -148,9 +148,47 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		return initial;
 	}
 	
-	public List<Solution> ChooseNeighbours(Solution Aold, COP constraints) {
+	public List<Solution> ChooseNeighbours(Solution Aold, COP constraints, TaskSet tasks) {
 		List<Solution> N = new ArrayList<Solution>();
+
+		Integer[] nextTV = Aold.nextTaskVehicles;
+		int vIndex = chooseRandomVehicle(nextTV);
+		Integer pickFirstTaskIndex = 0; // t
+
+		for (int j = 0; j < agent.vehicles().size(); j++) {
+			if (j != vIndex) {
+				pickFirstTaskIndex = Aold.nextTaskVehicles[vIndex];
+				
+				Task[] tasksArray = (Task[]) tasks.toArray();
+				if (tasksArray[pickFirstTaskIndex].weight <= agent.vehicles().get(vIndex).capacity()) {
+					Solution A = ChangingVehicle(Aold, vIndex, j);
+					N.add(A);
+				}
+				
+			}
+		}
 		
+		int length = 0;
+		pickFirstTaskIndex = vIndex;
+		
+		do {
+			pickFirstTaskIndex = Aold.nextTaskActions[pickFirstTaskIndex];
+			length++;
+		} while (pickFirstTaskIndex != null);
+		
+		
+		if (length > 2) {
+			for (int tIdx1 = 0; tIdx1 < length-1; tIdx1++) {
+				for (int tIdx2 = tIdx1 + 1; tIdx2 < length; tIdx2++) {
+					Solution A = ChangingTaskOrder(Aold, vIndex, tIdx1, tIdx2);
+					if (A != null) {
+						N.add(A);
+					}
+					
+				}
+			}
+		}
+
 		return N;
 	}
 	
@@ -237,5 +275,29 @@ public class CentralizedTemplate implements CentralizedBehavior {
 				}
 			}
 		}
+	}
+	
+	
+	private int chooseRandomVehicle(Integer[] nTV) {
+		int vehicleId = 0;
+
+		List<Integer> possibleVehicleIndexes = new ArrayList<Integer>();
+
+		if (!possibleVehicleIndexes.isEmpty()) {
+
+			for (int i = 0; i < nTV.length; i++) {
+				if (nTV[i] != null) {
+					possibleVehicleIndexes.add(i);
+				}
+			}
+
+			Random randomizer = new Random();
+			vehicleId = possibleVehicleIndexes.get(randomizer.nextInt(possibleVehicleIndexes.size()));
+		} else {
+			System.err.println("Error when choosing random vehicle in ChooseNeighbor method.");
+		}
+
+
+		return vehicleId;
 	}
 }
