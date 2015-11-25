@@ -90,15 +90,16 @@ public class Solution {
 		// Check if the exchange is possible : not put a deliver before its pickup and the opposite
 		// t1 is a pickup		
 		if (t1 % 2 == 0) {
-			if (A1.time[v][t2] > A1.time[v][t1+1]) {
+			if (A1.time[v][t2] < A1.time[v][t1+1]) {
 				return null;
 			}
 		}
+		
 		// t2 is a deliver
 		if (t2 % 2 != 0) {
 			// The pickup is after t1
 			//if(A1.time[v][t2-1]>=A1.time[v][t1]){
-			if(A1.time[v][t1] < A1.time[v][t2-1]){
+			if(A1.time[v][t1] > A1.time[v][t2-1]){
 				return null;
 			}
 		}
@@ -115,7 +116,10 @@ public class Solution {
 			A1.setNextAction(t2, tPost1);
 			A1.setNextAction(t1, tPost2);
 		}
-		A1.updateTime(v);
+		int timeT1 = A1.time[v][t1];
+		A1.time[v][t1] = A1.time[v][t2];
+		A1.time[v][t2] = timeT1;
+		//A1.updateTime(v);
 
 		return A1;
 
@@ -316,20 +320,35 @@ public class Solution {
 
 	/** Update Time of a vehicle**/
 	public void updateTime(int vi) {
-		//System.out.println("update time");
-		Arrays.fill(this.time[vi], -1);
-		if (this.getFirstTaskVehicles(vi) != null) {
-			Integer ti = this.getFirstTaskVehicles(vi);
-			this.time[vi][ti.intValue()] = 1;	
-			Integer tj;
-			do{
-				tj = this.getNextAction(ti);
+		Integer t = getFirstTaskVehicles(vi);
+		if (t != null) {
+			time[vi][t] = 1;
+			Integer tj = 0;
+			while (tj != null) {
+				tj = post(t);
 				if (tj != null) {
-					this.time[vi][tj] = this.time[vi][ti]+1;
-					ti = tj;
+					time[vi][tj] = time[vi][t] + 1;
+					t = tj;
 				}
-			}while (tj != null);
+			}
 		}
+
+
+
+		//		//System.out.println("update time");
+		//		Arrays.fill(this.time[vi], -1);
+		//		if (this.getFirstTaskVehicles(vi) != null) {
+		//			Integer ti = this.getFirstTaskVehicles(vi);
+		//			this.time[vi][ti.intValue()] = 1;	
+		//			Integer tj;
+		//			do{
+		//				tj = this.getNextAction(ti);
+		//				if (tj != null) {
+		//					this.time[vi][tj] = this.time[vi][ti]+1;
+		//					ti = tj;
+		//				}
+		//			}while (tj != null);
+		//		}
 
 	}
 }
