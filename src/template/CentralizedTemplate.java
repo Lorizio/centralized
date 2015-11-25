@@ -99,12 +99,15 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		Object[] tasksArray =  tasks.toArray();
 		Integer randomlyChosenVehicle = chooseRandomVehicle(Aold.firstTaskVehicles);
 		Integer indexOfFirstTask = Aold.getFirstTaskVehicles(randomlyChosenVehicle);
+		System.out.println("indexoffirsttask : " + indexOfFirstTask);
+		System.out.println("random vehicle :" + randomlyChosenVehicle);
+		System.out.println("random vehicle task :" + Aold.getFirstTaskVehicles(randomlyChosenVehicle));
 
 		// Applying the changing vehicle operator
 		for (int vehicleTo = 0; vehicleTo < agent.vehicles().size(); vehicleTo++) {
 			if (vehicleTo != randomlyChosenVehicle) {
 				if (((Task)tasksArray[indexOfFirstTask/2]).weight <= computeFreeSpaceBeginning(vehicleTo, Aold)) {
-					System.out.println("random vehicle :" + randomlyChosenVehicle);
+					
 					Solution A = Aold.changingVehicle(randomlyChosenVehicle, vehicleTo);
 					neighbors.add(A);
 				}	
@@ -121,7 +124,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
 			length++;
 			indexOfFirstTask = Aold.getNextAction(indexOfFirstTask);
 		}
-
+/*
 		//System.out.println("taille chemin :"+length);
 		if (length > 3) {
 			// start at 1 to leave the first task untouched
@@ -133,7 +136,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
 					}	
 				}
 			}
-		}
+		}*/
 		return neighbors;
 	}
 
@@ -236,25 +239,27 @@ public class CentralizedTemplate implements CentralizedBehavior {
 
 
 	public boolean isValid(Solution A) {
-		System.out.println("compute free space");
+		System.out.println("isValid");
 
 		boolean isValid = true;
 
 		for (int vehicleID = 0; vehicleID < agent.vehicles().size(); vehicleID++) {
 			Integer Idx = A.getFirstTaskVehicles(vehicleID);
 			int weight = 0;
+			int capacity = agent.vehicles().get(vehicleID).capacity();
 
 			while (Idx != null) {
-				System.out.println(weight);
 				if (Idx % 2 == 0) {
 					weight = weight + allTasksList.get(Idx / 2).weight;
-					if (weight > agent.vehicles().get(vehicleID).capacity()) {
+					if (weight > capacity) {
 						isValid = false;
+						break;
 					}
 				} else {
 					weight = weight - allTasksList.get(Idx / 2).weight;
 					if (weight < 0) {
 						isValid = false;
+						break;
 					}
 				}
 
@@ -318,7 +323,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		int vi = 0;
 		List<Integer> possibleVehicleIdx = new ArrayList<Integer>();
 
-		for (int i = 0; i < agent.vehicles().size(); i++) {
+		for (int i = 0; i < nextTaskVehicle.length; i++) {
 			if (nextTaskVehicle[i] != null) {
 				possibleVehicleIdx.add(i);
 				//System.out.println(nextTaskVehicle[i] +" " +  i);
