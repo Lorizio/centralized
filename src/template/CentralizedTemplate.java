@@ -33,7 +33,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
 	private List<Task> allTasksList;
 
 	private double p = 0.5;
-	private int maxIteration = 1000;
+	private int maxIteration = 10000;
 
 	@Override
 	public void setup(Topology topology, TaskDistribution distribution,
@@ -73,7 +73,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		Solution A;
 		int iter = 0;
 
-		A = SelectInitialSolution(vehicles, tasks);
+		A = SelectInitialSolution_2(vehicles, tasks);
 
 		while((iter < maxIteration) && (System.currentTimeMillis() - time_start < timeout_plan)) {
 			Aold = A;
@@ -222,6 +222,48 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		return initial;
 	}
 
+	public Solution SelectInitialSolution_2(List<Vehicle> vehicles, TaskSet tasks) {
+		Solution initial = new Solution(vehicles.size(), tasks.size());
+		
+		ArrayList<Task> temp = new ArrayList<Task>(allTasksList);
+		
+		// Pickup the tasks in the home cities of the vehicles
+		for (Vehicle v : vehicles) {
+			for (Task t : tasks) {
+				if ((t.pickupCity.equals(v.homeCity())) && (computeFreeSpaceBeginning(v.id(), initial) > t.weight) ) {
+					Integer IdxP = t.id*2;
+					Integer NextIdxV = initial.firstTaskVehicles[v.id()];
+					initial.time[v.id()][IdxP] = 1;
+					initial.time[v.id()][IdxP+1] = 2;
+					
+					initial.nextAction[IdxP+1] = NextIdxV;
+					initial.firstTaskVehicles[v.id()] = IdxP;
+					initial.nextAction[IdxP] = IdxP + 1;
+					initial.vehicles[t.id] = v.id();
+					temp.remove(t);
+				}
+			}
+		}
+		
+		// For the rest of the tasks assign randomly to a vehicle
+		while (!temp.isEmpty()) {
+			Task t = temp.get(0);
+			int randomV = new Random().nextInt(vehicles.size());
+			if (computeFreeSpaceBeginning(randomV, initial) > t.weight) {
+				Integer IdxP = t.id*2;
+				Integer NextIdxV = initial.firstTaskVehicles[randomV];
+				initial.time[randomV][IdxP] = 1;
+				initial.time[randomV][IdxP+1] = 2;
+				if (NextIdxV != null) initial.time[randomV][NextIdxV] = 3;
+				initial.nextAction[IdxP+1] = NextIdxV;
+				initial.firstTaskVehicles[randomV] = IdxP;
+				initial.nextAction[IdxP] = IdxP + 1;
+				initial.vehicles[t.id] = randomV;
+				temp.remove(t);
+			}
+		}
+		return initial;
+	}
 	public int computeFreeSpaceBeginning(Integer vj, Solution A) {
 		//System.out.println("compute free space");
 		Integer Idx = A.getFirstTaskVehicles(vj);
