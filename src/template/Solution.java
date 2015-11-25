@@ -239,6 +239,7 @@ public class Solution {
 		Solution A1 = clone(this);
 
 		Integer firstTaskPickup = A1.getFirstTaskVehicles(vFrom);
+		System.out.println("firstTaskpickup : " + firstTaskPickup);
 		Integer postTaskPickup = A1.post(firstTaskPickup);
 
 		Integer firstTaskDelivery = firstTaskPickup + 1;
@@ -305,10 +306,10 @@ public class Solution {
 
 	public Solution clone(Solution s) {
 		Solution newSolution = new Solution(
-				s.nextAction, 
-				s.firstTaskVehicles, 
-				s.time, 
-				s.vehicles);
+				s.nextAction.clone(), 
+				s.firstTaskVehicles.clone(), 
+				s.time.clone(), 
+				s.vehicles.clone());
 
 		return newSolution;
 	}
