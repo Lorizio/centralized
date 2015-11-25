@@ -33,7 +33,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
 	private List<Task> allTasksList;
 
 	private double p = 0.5;
-	private int maxIteration = 10000;
+	private int maxIteration = 1000;
 
 	@Override
 	public void setup(Topology topology, TaskDistribution distribution,
@@ -124,7 +124,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
 			length++;
 			indexOfFirstTask = Aold.getNextAction(indexOfFirstTask);
 		}
-/*
+
 		//System.out.println("taille chemin :"+length);
 		if (length > 3) {
 			// start at 1 to leave the first task untouched
@@ -136,7 +136,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
 					}	
 				}
 			}
-		}*/
+		}
 		return neighbors;
 	}
 
@@ -239,7 +239,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
 
 
 	public boolean isValid(Solution A) {
-		System.out.println("isValid");
+		//System.out.println("isValid");
 
 		boolean isValid = true;
 
