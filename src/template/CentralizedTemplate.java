@@ -32,8 +32,8 @@ public class CentralizedTemplate implements CentralizedBehavior {
 	private long timeout_plan;
 	private List<Task> allTasksList;
 
-	private double p = 0.4;
-	private int maxIteration = 1000;
+	private double p = 0.5;
+	private int maxIteration = 5000;
 
 	@Override
 	public void setup(Topology topology, TaskDistribution distribution,
@@ -78,24 +78,23 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		while((iter < maxIteration) && (System.currentTimeMillis() - time_start < timeout_plan)) {
 			Aold = A;
 			N = ChooseNeighbours(Aold,tasks);
-			A = LocalChoice(N, tasks, Aold);
+			A = LocalChoice(N, tasks, Aold,p);
 			iter++;
-			System.out.println("Etape" + iter);
+			System.out.println("Etape n°" + iter);
 		}
 
 		long time_end = System.currentTimeMillis();
 		long duration = time_end - time_start;
 		System.out.println("The plan was generated in " + duration + " milliseconds.");
-		for (int i = 0; i < A.nextAction.length; i++) {
-			System.out.println(A.nextAction[i]);
-		}
-		return A.toPlans(vehicles, tasks);
+//		for (int i = 0; i < A.nextAction.length; i++) {
+//			System.out.println(A.nextAction[i]);
+//		}
+		return A.toPlans(vehicles, tasks,true);
 	}
-
 
 	/** Choose Neighbors**/
 	public List<Solution> ChooseNeighbours(Solution Aold, TaskSet tasks) {
-		System.out.println("choose neighbours");
+		//System.out.println("choose neighbours");
 
 		List<Solution> neighbors = new ArrayList<Solution>();
 
@@ -104,47 +103,66 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		Integer indexOfFirstTask = Aold.getFirstTaskVehicles(randomlyChosenVehicle);
 
 		// Applying the changing vehicle operator
-		for (int vehicleTo = 0; vehicleTo < agent.vehicles().size(); vehicleTo++) {
-			if (vehicleTo != randomlyChosenVehicle) {
-				if (((Task)tasksArray[indexOfFirstTask/2]).weight <= computeFreeSpaceBeginning(vehicleTo, Aold)) {
-					
-					Solution A = Aold.changingVehicle(randomlyChosenVehicle, vehicleTo);
-					neighbors.add(A);
-				}	
-			}	
-		}
-
-
-		//System.out.println("avant boucle length");
-
-		// Applying the changing task order operator
-		int length = 0;
-		indexOfFirstTask = Aold.getFirstTaskVehicles(randomlyChosenVehicle);	
-		while (indexOfFirstTask != null) {
-			length++;
-			indexOfFirstTask = Aold.getNextAction(indexOfFirstTask);
-		}
-
-		//System.out.println("taille chemin :"+length);
-		if (length > 3) {
-			// start at 1 to leave the first task untouched
-			for (int tIdx1 = 1; tIdx1 < length-1; tIdx1++) {
-				for (int tIdx2 = tIdx1 + 1; tIdx2 < length; tIdx2++) {
-					Solution A = Aold.changingTaskOrder(randomlyChosenVehicle, tIdx1, tIdx2);
-					if ((A != null) && isValid(A)) {
+		for (int vehicleTo = 0; vehicleTo < agent.vehicles().size()-1; vehicleTo++) {
+			for (int vehicleFrom = 1; vehicleFrom<agent.vehicles().size();vehicleFrom++ )
+			{
+				if (vehicleTo != vehicleFrom) {
+					if (((Task)tasksArray[indexOfFirstTask/2]).weight <= computeFreeSpaceBeginning(vehicleTo, Aold)) {
+						//System.out.println("changing vehicle");
+						Solution A = Aold.changingVehicle(vehicleFrom, vehicleTo);
+						neighbors.addAll(changingTaskOrder(A, vehicleFrom));
+						//System.out.println("cost changing vehicle "+ computeCost(A, tasks));
 						neighbors.add(A);
 					}	
+				}
+			}
+			
+		}
+
+		
+
+		//Choose the solution with the min cost
+		if (neighbors == null) System.out.println("N null");
+		if (Aold == null) System.out.println("Aold null");
+		
+		//Solution Amin = LocalChoice(neighbors, tasks, Aold, 1);
+		//if (Amin == null) System.out.println("Amin null");
+		
+		neighbors.addAll(changingTaskOrder(Aold, randomlyChosenVehicle));
+		//neighbors.addAll(changingTaskOrder(Amin, randomlyChosenVehicle));
+		//System.out.println("Before return neighboors");
+		return neighbors;
+	}
+
+	/** changing task order**/
+	public List <Solution> changingTaskOrder(Solution A, Integer vehicle) {
+		List<Solution> neighbors = new ArrayList<Solution>();
+		// Applying the changing task order operator
+		int length = 0;
+		Integer indexOfFirstTask = A.getFirstTaskVehicles(vehicle);	
+		while (indexOfFirstTask != null) {
+			length++;
+			indexOfFirstTask = A.getNextAction(indexOfFirstTask);
+		}
+
+		if (length > 3) {
+			// start at 1 to leave the first task untouched
+			for (int tIdx1 = 0; tIdx1 < length-1; tIdx1++) {
+				for (int tIdx2 = tIdx1 + 1; tIdx2 < length; tIdx2++) {
+					Solution newSol = A.changingTaskOrder(vehicle, tIdx1, tIdx2);
+					if (isValid(newSol)) neighbors.add(newSol);
 				}
 			}
 		}
 		return neighbors;
 	}
-
+	 
 	/** Local Choice **/
-	public Solution LocalChoice(List<Solution> N, TaskSet tasks, Solution Aold) {
-		System.out.println("Local choice");
+	public Solution LocalChoice(List<Solution> N, TaskSet tasks, Solution Aold, double p) {
+		//System.out.println("Local choice");
 		if (!N.isEmpty()) {
 			Solution A = N.get(0);
+			if (A == null)	System.out.println("plan null");
 			float minCost = computeCost(A, tasks);	
 			// Find the solution with the minimal cost
 			for(Solution s : N)
@@ -189,7 +207,6 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		}
 		return plan;
 	}
-
 
 	/** Select Initial Solution **/
 	public Solution SelectInitialSolution(List<Vehicle> vehicles, TaskSet tasks ) {
@@ -259,9 +276,6 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		}
 		return initial;
 	}
-	
-	
-	
 
 	public Solution SelectInitialSolution_2(List<Vehicle> vehicles, TaskSet tasks) {
 		Solution initial = new Solution(vehicles.size(), tasks.size());
@@ -274,13 +288,11 @@ public class CentralizedTemplate implements CentralizedBehavior {
 				if ((t.pickupCity.equals(v.homeCity())) && (computeFreeSpaceBeginning(v.id(), initial) >= t.weight) ) {
 					Integer IdxP = t.id*2;
 					Integer NextIdxV = initial.firstTaskVehicles[v.id()];
-					initial.time[v.id()][IdxP] = 1;
-					initial.time[v.id()][IdxP+1] = 2;
-					
 					initial.nextAction[IdxP+1] = NextIdxV;
 					initial.firstTaskVehicles[v.id()] = IdxP;
 					initial.nextAction[IdxP] = IdxP + 1;
 					initial.vehicles[t.id] = v.id();
+					initial.updateTime(v.id());
 					temp.remove(t);
 				}
 			}
@@ -293,18 +305,17 @@ public class CentralizedTemplate implements CentralizedBehavior {
 			if (computeFreeSpaceBeginning(randomV, initial) > t.weight) {
 				Integer IdxP = t.id*2;
 				Integer NextIdxV = initial.firstTaskVehicles[randomV];
-				initial.time[randomV][IdxP] = 1;
-				initial.time[randomV][IdxP+1] = 2;
-				if (NextIdxV != null) initial.time[randomV][NextIdxV] = 3;
 				initial.nextAction[IdxP+1] = NextIdxV;
 				initial.firstTaskVehicles[randomV] = IdxP;
 				initial.nextAction[IdxP] = IdxP + 1;
 				initial.vehicles[t.id] = randomV;
+				initial.updateTime(randomV);
 				temp.remove(t);
 			}
 		}
 		return initial;
 	}
+	
 	public int computeFreeSpaceBeginning(Integer vj, Solution A) {
 		//System.out.println("compute free space");
 		Integer Idx = A.getFirstTaskVehicles(vj);
@@ -315,17 +326,17 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		while ((Idx != null) && (Idx % 2 == 0)) {
 			weight = weight + allTasksList.get(Idx / 2).weight;
 			Idx = A.nextAction[Idx];
-			System.out.println("weight : " +weight);
+			//System.out.println("weight : " +weight);
 		}
 		return agent.vehicles().get(vj).capacity()-weight;
 	}
-
 
 	public boolean isValid(Solution A) {
 		//System.out.println("isValid");
 
 		boolean isValid = true;
-
+		if (A == null) return false;
+		
 		for (int vehicleID = 0; vehicleID < agent.vehicles().size(); vehicleID++) {
 			Integer Idx = A.getFirstTaskVehicles(vehicleID);
 			int weight = 0;
@@ -354,47 +365,54 @@ public class CentralizedTemplate implements CentralizedBehavior {
 
 	/** Compute Cost **/
 	public float computeCost(Solution A, TaskSet tasks) {
-		Object[] tasksArray = tasks.toArray();
+//		Object[] tasksArray = tasks.toArray();
 		float cost = 0;
-		// Compute the cost of a plan for each vehicle
-		for( int vi = 0 ; vi <A.firstTaskVehicles.length; vi++ ) {
-			int costPerKm = agent.vehicles().get(vi).costPerKm();
-			if (A.firstTaskVehicles[vi] != null){
-				City taskOneCity = ((Task)tasksArray[A.firstTaskVehicles[vi]/2]).pickupCity;
-				double distHomeTaskOne = agent.vehicles().get(vi).homeCity().distanceTo(taskOneCity);
-				cost += costPerKm * distHomeTaskOne;
+//		// Compute the cost of a plan for each vehicle
+//		for( int vi = 0 ; vi <A.firstTaskVehicles.length; vi++ ) {
+//			int costPerKm = agent.vehicles().get(vi).costPerKm();
+//			if (A.firstTaskVehicles[vi] != null){
+//				City taskOneCity = ((Task)tasksArray[A.firstTaskVehicles[vi]/2]).pickupCity;
+//				double distHomeTaskOne = agent.vehicles().get(vi).homeCity().distanceTo(taskOneCity);
+//				cost += costPerKm * distHomeTaskOne;
+//			}
+//
+//		}
+//		//all pickup
+//		for (int pi = 0 ; pi<A.nextAction.length; pi= pi+2) {
+//			City piCity = ((Task)tasksArray[pi/2]).pickupCity;
+//			City nextCity = null;
+//			int costPerKm = agent.vehicles().get(A.vehicles[pi/2]).costPerKm();
+//			Integer nextTaskTi = A.nextAction[pi];
+//			if (nextTaskTi != null) 
+//			{
+//				if (nextTaskTi % 2 == 0 )
+//					nextCity = ((Task)tasksArray[nextTaskTi/2]).pickupCity;
+//				else 
+//					nextCity = ((Task)tasksArray[nextTaskTi/2]).deliveryCity;
+//				cost += costPerKm * piCity.distanceTo(nextCity);
+//			}
+//
+//		}
+//		//all delivered
+//		for (int di = 1 ; di<A.nextAction.length; di=di+2) {
+//			City diCity = ((Task)tasksArray[di/2]).deliveryCity;
+//			City nextCity = null;
+//			int costPerKm = agent.vehicles().get(A.vehicles[di/2]).costPerKm();
+//			Integer nextTaskTi = A.nextAction[di];
+//			if (nextTaskTi != null) {
+//				if (nextTaskTi % 2 == 0 )
+//					nextCity = ((Task)tasksArray[nextTaskTi/2]).pickupCity;
+//				else 
+//					nextCity = ((Task)tasksArray[nextTaskTi/2]).deliveryCity;
+//				cost += costPerKm * diCity.distanceTo(nextCity);
+//			}
+//		}
+		List<Plan> p = A.toPlans(agent.vehicles(), allTasksList,false);
+		for (int i=0;i<p.size();i++){
+			if (p.get(i)!=null) {
+				cost += p.get(i).totalDistance()*agent.vehicles().get(i).costPerKm();
 			}
-
-		}
-		//all pickup
-		for (int pi = 0 ; pi < A.nextAction.length; pi= pi+2) {
-			City piCity = ((Task)tasksArray[pi/2]).pickupCity;
-			City nextCity = null;
-			int costPerKm = agent.vehicles().get(A.vehicles[pi/2]).costPerKm();
-			Integer nextTaskTi = A.nextAction[pi];
-			if (nextTaskTi != null) 
-			{
-				if (nextTaskTi % 2 == 0 )
-					nextCity = ((Task)tasksArray[nextTaskTi/2]).pickupCity;
-				else 
-					nextCity = ((Task)tasksArray[nextTaskTi/2]).deliveryCity;
-				cost += costPerKm * piCity.distanceTo(nextCity);
-			}
-
-		}
-		//all delivered
-		for (int di = 1 ; di < A.nextAction.length; di= di+2) {
-			City diCity = ((Task)tasksArray[di/2]).deliveryCity;
-			City nextCity = null;
-			int costPerKm = agent.vehicles().get(A.vehicles[di/2]).costPerKm();
-			Integer nextTaskTi = A.nextAction[di];
-			if (nextTaskTi != null) {
-				if (nextTaskTi % 2 == 0 )
-					nextCity = ((Task)tasksArray[nextTaskTi/2]).pickupCity;
-				else 
-					nextCity = ((Task)tasksArray[nextTaskTi/2]).deliveryCity;
-				cost += costPerKm * diCity.distanceTo(nextCity);
-			}
+			
 		}
 		return cost;
 	}
@@ -417,10 +435,10 @@ public class CentralizedTemplate implements CentralizedBehavior {
 			vi = possibleVehicleIdx.get(randomizer.nextInt(possibleVehicleIdx.size()));
 		} 
 		else {
-			System.out.println("pas de vehicule possible");
+			//System.out.println("pas de vehicule possible");
 			System.err.println("Error when choosing random vehicle in ChooseNeighbor method.");
 		}
-		System.out.println("vehicles possible : " + possibleVehicleIdx);
+		//System.out.println("vehicles possible : " + possibleVehicleIdx);
 		return vi;
 	}
 }
