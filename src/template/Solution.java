@@ -1,7 +1,6 @@
 package template;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import logist.plan.Action;
@@ -12,6 +11,9 @@ import logist.task.TaskSet;
 import logist.topology.Topology.City;
 
 public class Solution {
+	private List<Vehicle> vehiclesList;
+	private List<Task> tasksList;
+
 	private int numberOfVehicle = 0;
 	private int numberOfTasks = 0;
 
@@ -26,7 +28,18 @@ public class Solution {
 
 		this.initialize();
 	}
-	
+
+	public Solution (List<Vehicle> vehiclesL, List<Task> tasksL) {
+		this.vehiclesList = vehiclesL;
+		this.tasksList = tasksL;
+
+		this.numberOfTasks = this.tasksList.size();
+		this.numberOfVehicle = this.vehiclesList.size();
+
+		initialize();
+
+	}
+
 	/**
 	 * Creates a solution based on a previous solution (s) which contains
 	 * another additional task (t)
@@ -36,19 +49,22 @@ public class Solution {
 	public Solution(Solution s, Task t) {
 		this.numberOfVehicle = s.numberOfVehicle;
 		this.numberOfTasks = s.numberOfTasks + 1;
-		
-//		this.nextAction = new Integer[2*numberOfTasks];
-//		int i = 0;
-//		for (i = 0; i < s.nextAction.length; i++) {
-//			this.nextAction[]
-//		}
-		
-		
+
+		//		this.nextAction = new Integer[2*numberOfTasks];
+		//		int i = 0;
+		//		for (i = 0; i < s.nextAction.length; i++) {
+		//			this.nextAction[]
+		//		}
+
+
 	}
-	
-	public Solution(int vehiculesSize) {
-		this.numberOfVehicle = vehiculesSize;
-		this.numberOfTasks = 0;
+
+	public Solution(List<Vehicle> vehiclesL) {
+		this.vehiclesList = vehiclesL;
+		this.tasksList = new ArrayList<Task>();
+
+		this.numberOfVehicle = this.vehiclesList.size();
+		this.numberOfTasks = this.tasksList.size();
 
 		initialize();
 	}
@@ -56,7 +72,7 @@ public class Solution {
 	public Solution(Integer[] nTA, Integer[] nTV, Integer[][] time, Integer[] v) {
 		this.numberOfTasks = v.length;
 		this.numberOfVehicle = nTV.length;
-		
+
 		this.nextAction = nTA;
 		this.firstTaskVehicles = nTV;
 		this.time = time;
@@ -91,9 +107,9 @@ public class Solution {
 
 		Solution A1 = clone(this);
 		//System.out.println("("+ tIdx1 +","+ tIdx2+")");
-		Integer tPre1 = v; //A1.getNextTaskVehicles(vi);// previous task of action1
-		Integer t1 = A1.getFirstTaskVehicles(tPre1); // task1
-		int count = 1;
+		Integer tPre1 = null; // previous task of action1
+		Integer t1 = A1.getFirstTaskVehicles(v); // task1
+		int count = 0;
 
 		while(count < tIdx1) {
 			tPre1 = t1;
@@ -115,108 +131,45 @@ public class Solution {
 		Integer tPost2 = A1.getNextAction(t2); // the task done after t2
 
 		// Check if the exchange is possible : not put a deliver before its pickup and the opposite
-		// t1 is a pickup		
-		if (((t1 % 2 == 0) && (A1.time[v][t2] >= A1.time[v][t1+1])) 
-				||((t2 % 2 != 0)&&(A1.time[v][t1] <= A1.time[v][t2-1]))) {
+
+		if (((t1 % 2 == 0) && (A1.time[v][t2] >= A1.time[v][t1+1])) // t1 is a pickup
+				||((t2 % 2 != 0) && (A1.time[v][t1] <= A1.time[v][t2-1]))) { // t2 is a deliver
 			return null;
 		}
 		else {
-			if (tPost1 == t2) {
+			if (tPre1 != null) {
+				A1.setNextAction(tPre1, t2);
+				A1.setNextAction(t1, tPost2);
 				// t2 is done just after t1
-				A1.setNextAction(tPre1, t2);
-				A1.setNextAction(t2, t1);
-				A1.setNextAction(t1, tPost2);
-			}
-			else {
-				A1.setNextAction(tPre1, t2);
-				A1.setNextAction(tPre2, t1);
-				A1.setNextAction(t2, tPost1);
-				A1.setNextAction(t1, tPost2);
-			}
-			int timeT1 = A1.time[v][t1];
-			A1.time[v][t1] = A1.time[v][t2];
-			A1.time[v][t2] = timeT1;
-			//A1.updateTime(v);
+				if (tPost1 == t2)  {
+					A1.setNextAction(t2, t1);
+				}
+				else {
+					A1.setNextAction(tPre2, t1);
+					A1.setNextAction(t2, tPost1);
+				}
 
+				//A1.updateTime(v);
+			} else {
+				A1.setFirstTaskVehicles(v, t2);
+				A1.setNextAction(t1, tPost2);
+
+				// t2 is done just after t1
+				if (tPost1 == t2)  {
+					A1.setNextAction(t2, t1);
+				}
+				else {
+					A1.setNextAction(tPre2, t1);
+					A1.setNextAction(t2, tPost1);
+				}
+			}
+
+			updateTime(v);
+			//			int timeT1 = A1.time[v][t1];
+			//			A1.time[v][t1] = A1.time[v][t2];
+			//			A1.time[v][t2] = timeT1;
 			return A1;
 		}
-	}
-
-
-	public List<Plan> toPlans(List<Vehicle> vehicles, TaskSet tasks, boolean print) {
-		List<Plan> plans;
-		plans = new ArrayList<Plan>();
-		List<Task> tasksList = new ArrayList<Task>();
-		for (Task t : tasks) {
-			tasksList.add(t);
-		}
-		double couttotal = 0;
-
-		// for each vehicle we will create a plan
-		for (int i = 0; i < firstTaskVehicles.length; i++) {
-
-			// if vehicle has no first task --> plan is empty and the vehicle won't be used
-			if (firstTaskVehicles[i] == null) {
-				plans.add(Plan.EMPTY);
-
-			} 
-			else {
-				City currentCity = vehicles.get(i).homeCity();
-				Plan plan = new Plan(currentCity);
-
-				// move to pick up first task
-				for (City city : currentCity.pathTo(tasksList.get(firstTaskVehicles[i]/2).pickupCity)) {
-					plan.appendMove(city);
-				}
-
-				currentCity = tasksList.get(firstTaskVehicles[i]/2).pickupCity;
-
-				plan.appendPickup(tasksList.get(firstTaskVehicles[i]/2));
-
-				Integer action = nextAction[firstTaskVehicles[i]];
-				while (action != null) {
-					// next task id to handle = nextAction / 2
-					// pick up or deliver = nextAction % 2  /// 0: pickup, 1: deliver
-
-					int taskId = action / 2;
-					int p_Or_d = action % 2;
-
-					if (p_Or_d == 0) {
-						for (City city : currentCity.pathTo(tasksList.get(taskId).pickupCity)) {
-							plan.appendMove(city);
-						}
-						plan.appendPickup(tasksList.get(taskId));
-						currentCity = tasksList.get(taskId).pickupCity;
-
-					}
-					else {
-						for (City city : currentCity.pathTo(tasksList.get(taskId).deliveryCity)) {
-							plan.appendMove(city);
-						}
-						plan.appendDelivery(tasksList.get(taskId));
-						currentCity = tasksList.get(taskId).deliveryCity;
-					}
-
-					action = nextAction[action];
-				}
-				if (print) {
-					System.out.println("-----------------------");
-					couttotal = couttotal + plan.totalDistance()*vehicles.get(i).costPerKm();
-					System.out.println("Vehicle "+i + ",  cost :"+plan.totalDistance()*vehicles.get(i).costPerKm()+", color:"+vehicles.get(i).color().toString());
-					System.out.println("-----------------------");
-					for (Action A : plan) {
-						System.out.println(A.toString());
-					}
-				}
-				
-				plans.add(plan);
-
-			}
-			System.out.println("The plan cost " + couttotal);
-
-		}
-
-		return plans;
 	}
 
 
@@ -260,7 +213,7 @@ public class Solution {
 	/** Changing the vehicle for a task (pickup and delivery) **/
 	public Solution changingVehicle(int vFrom, int vTo) {
 		//System.out.println("Changing vehicle");
-		
+
 		Solution A1 = clone(this);
 
 		Integer firstTaskPickup = A1.getFirstTaskVehicles(vFrom);
@@ -272,17 +225,47 @@ public class Solution {
 		Integer preTaskDelivery = A1.pre(firstTaskDelivery, firstTaskPickup);
 		Integer postTaskDelivery = A1.post(firstTaskDelivery);
 
-		if (postTaskPickup == firstTaskDelivery) { // D_i immediately follows P_i
-			A1.setFirstTaskVehicles(vFrom, A1.findNextPickup(firstTaskPickup));
-			A1.setNextAction(firstTaskDelivery, A1.getFirstTaskVehicles(vTo));
-			A1.setNextAction(firstTaskPickup, firstTaskDelivery);
-			A1.setFirstTaskVehicles(vTo, firstTaskPickup);
+		// put the task at the beginning
+		//		if (postTaskPickup == firstTaskDelivery) { // D_i immediately follows P_i
+		//			A1.setFirstTaskVehicles(vFrom, A1.findNextPickup(firstTaskPickup));
+		//			A1.setNextAction(firstTaskDelivery, A1.getFirstTaskVehicles(vTo));
+		//			A1.setNextAction(firstTaskPickup, firstTaskDelivery);
+		//			A1.setFirstTaskVehicles(vTo, firstTaskPickup);
+		//		} else {
+		//			A1.setNextAction(preTaskDelivery, postTaskDelivery);
+		//			A1.setFirstTaskVehicles(vFrom, A1.findNextPickup(firstTaskPickup));
+		//			A1.setNextAction(firstTaskDelivery, A1.getFirstTaskVehicles(vTo));
+		//			A1.setNextAction(firstTaskPickup, firstTaskDelivery);
+		//			A1.setFirstTaskVehicles(vTo, firstTaskPickup);
+		//		}
+
+		// put the task at the end
+		if (A1.firstTaskVehicles[vTo] != null) {
+			if (postTaskPickup == firstTaskDelivery) { // D_i immediately follows P_i
+				A1.setFirstTaskVehicles(vFrom, A1.findNextPickup(firstTaskPickup));
+				A1.setNextAction(firstTaskDelivery, null);
+				A1.setNextAction(firstTaskPickup, firstTaskDelivery);
+				A1.setNextAction(findLastAction(A1.firstTaskVehicles[vTo]), firstTaskPickup);
+			} else {
+				A1.setNextAction(preTaskDelivery, postTaskDelivery);
+				A1.setFirstTaskVehicles(vFrom, A1.findNextPickup(firstTaskPickup));
+				A1.setNextAction(firstTaskDelivery, null);
+				A1.setNextAction(firstTaskPickup, firstTaskDelivery);
+				A1.setNextAction(findLastAction(A1.firstTaskVehicles[vTo]), firstTaskPickup);
+			}
 		} else {
-			A1.setNextAction(preTaskDelivery, postTaskDelivery);
-			A1.setFirstTaskVehicles(vFrom, A1.findNextPickup(firstTaskPickup));
-			A1.setNextAction(firstTaskDelivery, A1.getFirstTaskVehicles(vTo));
-			A1.setNextAction(firstTaskPickup, firstTaskDelivery);
-			A1.setFirstTaskVehicles(vTo, firstTaskPickup);
+			if (postTaskPickup == firstTaskDelivery) { // D_i immediately follows P_i
+				A1.setFirstTaskVehicles(vFrom, A1.findNextPickup(firstTaskPickup));
+				A1.setNextAction(firstTaskDelivery, null);
+				A1.setNextAction(firstTaskPickup, firstTaskDelivery);
+				A1.setFirstTaskVehicles(vTo, firstTaskPickup);
+			} else {
+				A1.setNextAction(preTaskDelivery, postTaskDelivery);
+				A1.setFirstTaskVehicles(vFrom, A1.findNextPickup(firstTaskPickup));
+				A1.setNextAction(firstTaskDelivery, null);
+				A1.setNextAction(firstTaskPickup, firstTaskDelivery);
+				A1.setFirstTaskVehicles(vTo, firstTaskPickup);
+			}
 		}
 
 		A1.vehicles[firstTaskPickup/2] = vTo;
@@ -291,7 +274,7 @@ public class Solution {
 		//System.out.println("end changingVehicle");
 		//System.out.println("changing vehicle vFrom : "+vFrom+" vTo :"+vTo);
 		return A1;
-		
+
 		/*
 		// Pick up
 		//else {
@@ -320,24 +303,43 @@ public class Solution {
 		A1.vehicles[firstTaskPickup/2] = vTo;
 		A1.updateTime(vFrom);
 		A1.updateTime(vTo);
-		
+
 		return A1;*/
 	}
+
+	private Integer findLastAction(Integer firstAction) {
+		if (firstAction == null) {
+			return null;
+		} else {
+
+			int lastAction = firstAction;
+			int nextAction = firstAction;
+			while (getNextAction(nextAction) != null) {
+				lastAction = nextAction;
+				nextAction = getNextAction(nextAction);
+			}
+
+			return nextAction;
+		}
+	}
+
 
 	public Solution clone(Solution s) {
 		Integer[][] newTime = new Integer[s.numberOfVehicle][2*s.numberOfTasks];
 		for (int v = 0; v < s.numberOfVehicle; v++){
 			newTime[v] = s.time[v].clone();
 		}
-		
+
 		Solution newSolution = new Solution(
 				s.nextAction.clone(), 
 				s.firstTaskVehicles.clone(), 
 				newTime, 
 				s.vehicles.clone());
-		
+
 		newSolution.numberOfTasks = s.numberOfTasks;
 		newSolution.numberOfVehicle = s.numberOfVehicle;
+		newSolution.vehiclesList = new ArrayList<Vehicle>(s.vehiclesList);
+		newSolution.tasksList = new ArrayList<Task>(s.tasksList);
 		return newSolution;
 	}
 
@@ -360,98 +362,133 @@ public class Solution {
 
 
 
-//				Arrays.fill(this.time[vi], -1);
-//				if (this.getFirstTaskVehicles(vi) != null) {
-//					Integer ti = this.getFirstTaskVehicles(vi);
-//					this.time[vi][ti.intValue()] = 1;	
-//					Integer tj;
-//					do{
-//						tj = this.getNextAction(ti);
-//						if (tj != null) {
-//							this.time[vi][tj] = this.time[vi][ti]+1;
-//							ti = tj;
-//						}
-//					}while (tj != null);
-//				}
-				//System.out.println("end update time");
+		//				Arrays.fill(this.time[vi], -1);
+		//				if (this.getFirstTaskVehicles(vi) != null) {
+		//					Integer ti = this.getFirstTaskVehicles(vi);
+		//					this.time[vi][ti.intValue()] = 1;	
+		//					Integer tj;
+		//					do{
+		//						tj = this.getNextAction(ti);
+		//						if (tj != null) {
+		//							this.time[vi][tj] = this.time[vi][ti]+1;
+		//							ti = tj;
+		//						}
+		//					}while (tj != null);
+		//				}
+		//System.out.println("end update time");
 
 	}
 
-	public List<Plan> toPlans(List<Vehicle> vehicles, List<Task> tasksList, boolean print) {
-		List<Plan> plans;
-		plans = new ArrayList<Plan>();
-		
-		double couttotal = 0;
+	/**
+	 * Build the plan of every vehicle of the solution
+	 * @param print: show sysout
+	 * @return a list of Plan. First element of the list is the plan of the first vehicle.
+	 */
+	public List<Plan> toPlans(boolean print) {
+		List<Plan> plans = new ArrayList<Plan>();
 
-		// for each vehicle we will create a plan
-		for (int i = 0; i < firstTaskVehicles.length; i++) {
+		for (Vehicle v : vehiclesList) {
+			plans.add(toPlan(v.id(), print));
+		}
 
-			// if vehicle has no first task --> plan is empty and the vehicle won't be used
-			if (firstTaskVehicles[i] == null) {
-				plans.add(Plan.EMPTY);
-
-			} 
-			else {
-				City currentCity = vehicles.get(i).homeCity();
-				Plan plan = new Plan(currentCity);
-
-				// move to pick up first task
-				for (City city : currentCity.pathTo(tasksList.get(firstTaskVehicles[i]/2).pickupCity)) {
-					plan.appendMove(city);
-				}
-
-				currentCity = tasksList.get(firstTaskVehicles[i]/2).pickupCity;
-
-				plan.appendPickup(tasksList.get(firstTaskVehicles[i]/2));
-
-				Integer action = nextAction[firstTaskVehicles[i]];
-				while (action != null) {
-					// next task id to handle = nextAction / 2
-					// pick up or deliver = nextAction % 2  /// 0: pickup, 1: deliver
-
-					int taskId = action / 2;
-					int p_Or_d = action % 2;
-
-					if (p_Or_d == 0) {
-						for (City city : currentCity.pathTo(tasksList.get(taskId).pickupCity)) {
-							plan.appendMove(city);
-						}
-						plan.appendPickup(tasksList.get(taskId));
-						currentCity = tasksList.get(taskId).pickupCity;
-
-					}
-					else {
-						for (City city : currentCity.pathTo(tasksList.get(taskId).deliveryCity)) {
-							plan.appendMove(city);
-						}
-						plan.appendDelivery(tasksList.get(taskId));
-						currentCity = tasksList.get(taskId).deliveryCity;
-					}
-
-					action = nextAction[action];
-				}
-				if (print) {
-					System.out.println("-----------------------");
-					couttotal = couttotal + plan.totalDistance()*vehicles.get(i).costPerKm();
-					System.out.println("Vehicle "+i + ",  cost :"+plan.totalDistance()*vehicles.get(i).costPerKm()+", color:"+vehicles.get(i).color().toString());
-					System.out.println("-----------------------");
-					for (Action A : plan) {
-						System.out.println(A.toString());
-					}
-					}
-				
-				plans.add(plan);
-
-			}
-			if (print)	System.out.println("the plan cost " + couttotal);
-
+		if (print) {
+			System.out.println("Total cost : " + totalCost());
 		}
 
 		return plans;
 	}
 
-	public double cost(){
-		
-		return 0;
+	/**
+	 * Build the plan of a given vehicle whose id is vID
+	 * @param vID
+	 * @param print: show sysout
+	 * @return the plan of the vehicle of id vID
+	 */
+	public Plan toPlan(int vID, boolean print) {
+		Plan plan = null;
+
+		if (firstTaskVehicles[vID] == null) {
+			return Plan.EMPTY;
+
+		} else {
+			City currentCity = vehiclesList.get(vID).homeCity();
+			plan = new Plan(currentCity);
+
+			// move to pick up first task
+			for (City city : currentCity.pathTo(tasksList.get(firstTaskVehicles[vID]/2).pickupCity)) {
+				plan.appendMove(city);
+			}
+
+			currentCity = tasksList.get(firstTaskVehicles[vID]/2).pickupCity;
+
+			plan.appendPickup(tasksList.get(firstTaskVehicles[vID]/2));
+
+			Integer action = nextAction[firstTaskVehicles[vID]];
+			while (action != null) {
+				// next task id to handle = nextAction / 2
+				// pick up or deliver = nextAction % 2  /// 0: pickup, 1: deliver
+
+				int taskId = action / 2;
+				int p_Or_d = action % 2;
+
+				if (p_Or_d == 0) {
+					for (City city : currentCity.pathTo(tasksList.get(taskId).pickupCity)) {
+						plan.appendMove(city);
+					}
+					plan.appendPickup(tasksList.get(taskId));
+					currentCity = tasksList.get(taskId).pickupCity;
+
+				}
+				else {
+					for (City city : currentCity.pathTo(tasksList.get(taskId).deliveryCity)) {
+						plan.appendMove(city);
+					}
+					plan.appendDelivery(tasksList.get(taskId));
+					currentCity = tasksList.get(taskId).deliveryCity;
+				}
+
+				action = nextAction[action];
+			}
+			if (print) {
+				System.out.println("-----------------------");
+				System.out.println("Vehicle ID "+ vID + ", cost :" + totalCost(vID) +", color:" + vehiclesList.get(vID).color());
+				System.out.println("-----------------------");
+				for (Action A : plan) {
+					System.out.println(A);
+				}
+			}
+		}
+
+		return plan;
+	}
+
+
+	/**
+	 * computes the total cost of the solution
+	 * @return
+	 */
+	public double totalCost(){
+		double cost = 0;
+
+		for (Vehicle v : vehiclesList) {
+			cost = cost + totalCost(v.id());
+		}
+		return cost;
+	}
+
+	/**
+	 * computes the cost of the plan of the vehicle of id [vID]
+	 * @param vID
+	 * @return
+	 */
+	public double totalCost(int vID) {
+		double cost = 0;
+
+		Plan p = this.toPlan(vID, false);
+		if (p != null) {
+			cost += p.totalDistance()*vehiclesList.get(vID).costPerKm();
+		}
+
+		return cost;
 	}
 }
