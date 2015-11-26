@@ -32,8 +32,8 @@ public class CentralizedTemplate implements CentralizedBehavior {
 	private long timeout_plan;
 	private List<Task> allTasksList;
 
-	private double p = 0.5;
-	private int maxIteration = 10000;
+	private double p = 0.4;
+	private int maxIteration = 1000;
 
 	@Override
 	public void setup(Topology topology, TaskDistribution distribution,
@@ -73,7 +73,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		Solution A;
 		int iter = 0;
 
-		A = SelectInitialSolution_2(vehicles, tasks);
+		A = SelectInitialSolution_3(vehicles, tasks);
 
 		while((iter < maxIteration) && (System.currentTimeMillis() - time_start < timeout_plan)) {
 			Aold = A;
@@ -86,6 +86,9 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		long time_end = System.currentTimeMillis();
 		long duration = time_end - time_start;
 		System.out.println("The plan was generated in " + duration + " milliseconds.");
+		for (int i = 0; i < A.nextAction.length; i++) {
+			System.out.println(A.nextAction[i]);
+		}
 		return A.toPlans(vehicles, tasks);
 	}
 
@@ -99,9 +102,6 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		Object[] tasksArray =  tasks.toArray();
 		Integer randomlyChosenVehicle = chooseRandomVehicle(Aold.firstTaskVehicles);
 		Integer indexOfFirstTask = Aold.getFirstTaskVehicles(randomlyChosenVehicle);
-		System.out.println("indexoffirsttask : " + indexOfFirstTask);
-		System.out.println("random vehicle :" + randomlyChosenVehicle);
-		System.out.println("random vehicle task :" + Aold.getFirstTaskVehicles(randomlyChosenVehicle));
 
 		// Applying the changing vehicle operator
 		for (int vehicleTo = 0; vehicleTo < agent.vehicles().size(); vehicleTo++) {
@@ -221,6 +221,47 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		}
 		return initial;
 	}
+	
+	/** Select Initial Solution **/
+	public Solution SelectInitialSolution_3(List<Vehicle> vehicles, TaskSet tasks ) {
+		Solution initial = new Solution(vehicles.size(), tasks.size());
+		int Nt = tasks.size();
+		Vehicle selectVehicle = vehicles.get(0);
+		Vehicle selectVehicle2 = vehicles.get(1);
+
+		// Fill the tables with Naive plan
+		// NextTaskActions & time
+		for(int i = 0; i<(Nt-1); i++) {
+			initial.nextAction[i] = i+1;
+			initial.time[selectVehicle.id()][i] = i+1;
+		}
+		initial.nextAction[Nt-1] = null;
+		initial.time[selectVehicle.id()][Nt-1] = Nt;
+		// --
+		for(int i = Nt; i<(2*Nt-1); i++) {
+			initial.nextAction[i] = i+1;
+			initial.time[selectVehicle2.id()][i] = i+1;
+		}
+		initial.nextAction[2*Nt-1] = null;
+		initial.time[selectVehicle2.id()][2*Nt-1] = 2*Nt;
+		// NextTaskVehicles
+		for(int vi = 0; vi<vehicles.size(); vi++) {
+			initial.firstTaskVehicles[vi] = null;
+		}
+		initial.firstTaskVehicles[selectVehicle.id()] = 0;
+		initial.firstTaskVehicles[selectVehicle2.id()] = Nt;
+		// Vehicles
+		for(int ti = 0 ; ti < Nt/2; ti++) {
+			initial.vehicles[ti] = selectVehicle.id();
+		}
+		for (int tj = Nt/2; tj < Nt; tj++) {
+			initial.vehicles[tj] = selectVehicle2.id();
+		}
+		return initial;
+	}
+	
+	
+	
 
 	public Solution SelectInitialSolution_2(List<Vehicle> vehicles, TaskSet tasks) {
 		Solution initial = new Solution(vehicles.size(), tasks.size());
@@ -230,7 +271,7 @@ public class CentralizedTemplate implements CentralizedBehavior {
 		// Pickup the tasks in the home cities of the vehicles
 		for (Vehicle v : vehicles) {
 			for (Task t : tasks) {
-				if ((t.pickupCity.equals(v.homeCity())) && (computeFreeSpaceBeginning(v.id(), initial) > t.weight) ) {
+				if ((t.pickupCity.equals(v.homeCity())) && (computeFreeSpaceBeginning(v.id(), initial) >= t.weight) ) {
 					Integer IdxP = t.id*2;
 					Integer NextIdxV = initial.firstTaskVehicles[v.id()];
 					initial.time[v.id()][IdxP] = 1;
