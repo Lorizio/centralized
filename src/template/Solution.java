@@ -263,13 +263,13 @@ public class Solution {
 		Integer firstTaskPickup = A1.getFirstTaskVehicles(vFrom);
 		//System.out.println("firstTaskpickup : " + firstTaskPickup);
 		Integer postTaskPickup = A1.post(firstTaskPickup);
-/*
+
 		Integer firstTaskDelivery = firstTaskPickup + 1;
 		System.out.println(firstTaskPickup);
 		Integer preTaskDelivery = A1.pre(firstTaskDelivery, firstTaskPickup);
 		Integer postTaskDelivery = A1.post(firstTaskDelivery);
 
-		if (preTaskDelivery == postTaskPickup) { // D_i immediately follows P_i
+		if (postTaskPickup == firstTaskDelivery) { // D_i immediately follows P_i
 			A1.setFirstTaskVehicles(vFrom, A1.findNextPickup(firstTaskPickup));
 			A1.setNextAction(firstTaskDelivery, A1.getFirstTaskVehicles(vTo));
 			A1.setNextAction(firstTaskPickup, firstTaskDelivery);
@@ -288,15 +288,8 @@ public class Solution {
 		System.out.println("end changingVehicle");
 
 		return A1;
-		*/
+		/*
 
-		System.out.println("FIRSTTASKPICKUP : " + firstTaskPickup);
-		// Delivery
-		if (firstTaskPickup % 2 != 0) {
-			A1.setFirstTaskVehicles(vFrom,A1.getNextAction(firstTaskPickup));
-			A1.setNextAction(firstTaskPickup, A1.getFirstTaskVehicles(vTo));
-			A1.setFirstTaskVehicles(vTo, firstTaskPickup);
-		}
 		// Pick up
 		else {
 			// We have to assign the pickup t and the deliver to the same vehicle
@@ -325,7 +318,7 @@ public class Solution {
 		A1.updateTime(vFrom);
 		A1.updateTime(vTo);
 		//System.out.println("apres updates");
-		return A1;
+		return A1;*/
 	}
 
 	public Solution clone(Solution s) {
