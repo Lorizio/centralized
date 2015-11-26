@@ -143,7 +143,7 @@ public class Solution {
 	}
 
 
-	public List<Plan> toPlans(List<Vehicle> vehicles, TaskSet tasks) {
+	public List<Plan> toPlans(List<Vehicle> vehicles, TaskSet tasks, boolean print) {
 		List<Plan> plans;
 		plans = new ArrayList<Plan>();
 		List<Task> tasksList = new ArrayList<Task>();
@@ -199,17 +199,20 @@ public class Solution {
 
 					action = nextAction[action];
 				}
-				System.out.println("-----------------------");
-				couttotal = couttotal + plan.totalDistance()*vehicles.get(i).costPerKm();
-				System.out.println("Vehicle "+i + ",  cost :"+plan.totalDistance()*vehicles.get(i).costPerKm()+", color:"+vehicles.get(i).color().toString());
-				System.out.println("-----------------------");
-				for (Action A : plan) {
-					System.out.println(A.toString());
+				if (print) {
+					System.out.println("-----------------------");
+					couttotal = couttotal + plan.totalDistance()*vehicles.get(i).costPerKm();
+					System.out.println("Vehicle "+i + ",  cost :"+plan.totalDistance()*vehicles.get(i).costPerKm()+", color:"+vehicles.get(i).color().toString());
+					System.out.println("-----------------------");
+					for (Action A : plan) {
+						System.out.println(A.toString());
+					}
 				}
+				
 				plans.add(plan);
 
 			}
-			System.out.println("cout total :" + couttotal);
+			System.out.println("The plan cost " + couttotal);
 
 		}
 
@@ -247,7 +250,7 @@ public class Solution {
 		}
 
 		if (action == null) {
-			System.err.println("pre() : fromAction et targetAction ne sont pas sur le même chemin");
+			System.err.println("pre() : fromAction et targetAction ne sont pas sur le mÃªme chemin");
 		}
 
 		return preAction;
@@ -256,7 +259,7 @@ public class Solution {
 
 	/** Changing the vehicle for a task (pickup and delivery) **/
 	public Solution changingVehicle(int vFrom, int vTo) {
-		System.out.println("Changing vehicle");
+		//System.out.println("Changing vehicle");
 		
 		Solution A1 = clone(this);
 
@@ -265,7 +268,7 @@ public class Solution {
 		Integer postTaskPickup = A1.post(firstTaskPickup);
 
 		Integer firstTaskDelivery = firstTaskPickup + 1;
-		System.out.println(firstTaskPickup);
+		//System.out.println(firstTaskPickup);
 		Integer preTaskDelivery = A1.pre(firstTaskDelivery, firstTaskPickup);
 		Integer postTaskDelivery = A1.post(firstTaskDelivery);
 
@@ -285,15 +288,15 @@ public class Solution {
 		A1.vehicles[firstTaskPickup/2] = vTo;
 		A1.updateTime(vFrom);
 		A1.updateTime(vTo);
-		System.out.println("end changingVehicle");
-
+		//System.out.println("end changingVehicle");
+		//System.out.println("changing vehicle vFrom : "+vFrom+" vTo :"+vTo);
 		return A1;
+		
 		/*
-
 		// Pick up
-		else {
+		//else {
 			// We have to assign the pickup t and the deliver to the same vehicle
-			if (A1.getNextAction(firstTaskPickup) == firstTaskPickup+1){
+			if (A1.getNextAction(firstTaskPickup) == firstTaskPickup+1) {
 				A1.setFirstTaskVehicles(vFrom, A1.getNextAction(firstTaskPickup+1));
 				A1.setNextAction(firstTaskPickup, firstTaskPickup+1);
 				A1.setNextAction(firstTaskPickup+1, A1.getFirstTaskVehicles(vTo));
@@ -301,7 +304,7 @@ public class Solution {
 			}	
 			else {
 				Integer id = firstTaskPickup;
-				int tPre=id;
+				int tPre = id;
 				while (id != firstTaskPickup+1){
 					tPre = id;
 					id = A1.getNextAction(id);
@@ -313,11 +316,11 @@ public class Solution {
 				A1.setFirstTaskVehicles(vTo,firstTaskPickup);
 			}
 			A1.vehicles[(firstTaskPickup+1)/2] = vTo;	
-		}
+		//}
 		A1.vehicles[firstTaskPickup/2] = vTo;
 		A1.updateTime(vFrom);
 		A1.updateTime(vTo);
-		//System.out.println("apres updates");
+		
 		return A1;*/
 	}
 
@@ -341,7 +344,7 @@ public class Solution {
 	/** Update Time of a vehicle**/
 	public void updateTime(int vi) {
 
-		System.out.println("update time");
+		//System.out.println("update time");
 		Integer t = getFirstTaskVehicles(vi);
 		if (t != null) {
 			time[vi][t] = 1;
@@ -370,11 +373,11 @@ public class Solution {
 //						}
 //					}while (tj != null);
 //				}
-				System.out.println("end update time");
+				//System.out.println("end update time");
 
 	}
 
-	public List<Plan> toPlans(List<Vehicle> vehicles, List<Task> tasksList) {
+	public List<Plan> toPlans(List<Vehicle> vehicles, List<Task> tasksList, boolean print) {
 		List<Plan> plans;
 		plans = new ArrayList<Plan>();
 		
@@ -427,17 +430,20 @@ public class Solution {
 
 					action = nextAction[action];
 				}
-				System.out.println("-----------------------");
-				couttotal = couttotal + plan.totalDistance()*vehicles.get(i).costPerKm();
-				System.out.println("Vehicle "+i + ",  cost :"+plan.totalDistance()*vehicles.get(i).costPerKm()+", color:"+vehicles.get(i).color().toString());
-				System.out.println("-----------------------");
-				for (Action A : plan) {
-					System.out.println(A.toString());
-				}
+				if (print) {
+					System.out.println("-----------------------");
+					couttotal = couttotal + plan.totalDistance()*vehicles.get(i).costPerKm();
+					System.out.println("Vehicle "+i + ",  cost :"+plan.totalDistance()*vehicles.get(i).costPerKm()+", color:"+vehicles.get(i).color().toString());
+					System.out.println("-----------------------");
+					for (Action A : plan) {
+						System.out.println(A.toString());
+					}
+					}
+				
 				plans.add(plan);
 
 			}
-			System.out.println("cout total :" + couttotal);
+			if (print)	System.out.println("the plan cost " + couttotal);
 
 		}
 
