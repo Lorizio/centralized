@@ -178,21 +178,17 @@ public class Solution {
 	 * Return null if there exist no next pickup.
 	 * @param action
 	 * @return null if there exist no next pickup
-	 */
+	 **/
 	public Integer findNextPickup(Integer action) {
-		Integer currentAction = action;
-
 		do {
-			currentAction = getNextAction(currentAction);
-		} while ((currentAction != null) && (currentAction % 2 == 1));
-
-		return currentAction;
+			action = getNextAction(action);
+		} while ((action != null) && (action % 2 == 1));
+		return action;
 	}
 
 	private Integer post(Integer action) {
 		return getNextAction(action);
 	}
-
 
 	private Integer pre(Integer targetAction, Integer fromAction) {
 		Integer action = fromAction;
@@ -203,7 +199,7 @@ public class Solution {
 		}
 
 		if (action == null) {
-			System.err.println("pre() : fromAction et targetAction ne sont pas sur le mÃªme chemin");
+			System.err.println("pre() : fromAction et targetAction ne sont pas sur le mÃƒÂªme chemin");
 		}
 
 		return preAction;
@@ -392,7 +388,7 @@ public class Solution {
 		}
 
 		if (print) {
-			System.out.println("Total cost : " + totalCost());
+			System.out.println("The plan cost " + totalCost()+".");
 		}
 
 		return plans;
@@ -450,12 +446,12 @@ public class Solution {
 				action = nextAction[action];
 			}
 			if (print) {
-				System.out.println("-----------------------");
-				System.out.println("Vehicle ID "+ vID + ", cost :" + totalCost(vID) +", color:" + vehiclesList.get(vID).color());
-				System.out.println("-----------------------");
-				for (Action A : plan) {
-					System.out.println(A);
-				}
+//				System.out.println("/n-----------------------");
+//				System.out.println("Vehicle ID "+ vID + ", cost :" + totalCost(vID) );
+//				System.out.println("-----------------------");
+//				for (Action A : plan) {
+//					System.out.println(A);
+//				}
 			}
 		}
 
